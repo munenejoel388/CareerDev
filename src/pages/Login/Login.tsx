@@ -40,7 +40,7 @@ function Login() {
 
       <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-[#0d1321]/60 p-8 shadow-2xl backdrop-blur-xl relative">
         <div className="absolute -top-3 -left-3 size-16 rounded-full bg-cyan-500/5 blur-md" />
-        
+
         {/* Logo and Header */}
         <div className="flex flex-col items-center mb-8 text-center">
           <Link to="/" className="flex items-center gap-2.5 mb-5">
@@ -57,7 +57,7 @@ function Login() {
 
         {!isConfigured ? (
           <div className="mb-6 rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-xs text-amber-400">
-            ⚠️ Supabase keys are not configured yet. Add them to your .env file before using authentication.
+            Supabase is not configured yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env locally and to GitHub repository secrets for production.
           </div>
         ) : null}
 
@@ -90,7 +90,7 @@ function Login() {
             <input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder="********"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="mt-2 w-full rounded-xl border border-slate-850 bg-slate-950 px-4 py-3 text-sm text-white placeholder-slate-600 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition duration-200"
