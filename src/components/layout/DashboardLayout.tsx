@@ -7,25 +7,25 @@ import { getCurrentUserProfile } from '../../services/profiles'
 import type { Profile } from '../../types/database'
 
 export default function DashboardLayout() {
-  const { user, signOut, isConfigured } = useAuth()
+  const { user, signOut } = useAuth()
   const navigate = useNavigate()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   useEffect(() => {
-    if (user && isConfigured) {
+    if (user) {
       getCurrentUserProfile(user.id)
         .then((data) => {
           if (data) setProfile(data)
         })
         .catch((err) => console.error('Error fetching profile:', err))
     }
-  }, [user, isConfigured])
+  }, [user])
 
   // Watch for profile update events (we will trigger this when profile changes)
   useEffect(() => {
     function handleProfileUpdate() {
-      if (user && isConfigured) {
+      if (user) {
         getCurrentUserProfile(user.id)
           .then((data) => {
             if (data) setProfile(data)
@@ -35,7 +35,7 @@ export default function DashboardLayout() {
     }
     window.addEventListener('profile-updated', handleProfileUpdate)
     return () => window.removeEventListener('profile-updated', handleProfileUpdate)
-  }, [user, isConfigured])
+  }, [user])
 
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User'
 

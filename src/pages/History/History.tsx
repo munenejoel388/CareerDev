@@ -6,7 +6,7 @@ import { listCareerAnalyses } from '../../services/careerAnalyses'
 import type { CareerAnalysis } from '../../types/database'
 
 export default function HistoryPage() {
-  const { user, isConfigured } = useAuth()
+  const { user } = useAuth()
   const [analyses, setAnalyses] = useState<CareerAnalysis[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -15,22 +15,11 @@ export default function HistoryPage() {
     if (!user) return
     setIsLoading(true)
 
-    if (isConfigured) {
-      listCareerAnalyses(user.id)
-        .then((data) => {
-          if (data) setAnalyses(data)
-        })
-        .catch((err) => console.error('Error fetching history:', err))
-        .finally(() => setIsLoading(false))
-    } else {
-      // Local Fallback
-      const local = localStorage.getItem('local_analyses')
-      if (local) {
-        setAnalyses(JSON.parse(local))
-      }
-      setIsLoading(false)
-    }
-  }, [user, isConfigured])
+    listCareerAnalyses(user.id)
+      .then((data) => setAnalyses(data))
+      .catch((err) => console.error('Error fetching history:', err))
+      .finally(() => setIsLoading(false))
+  }, [user])
 
   useEffect(() => {
     loadHistory()

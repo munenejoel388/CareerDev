@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { User, Shield, RefreshCw, Save, CheckCircle } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { getCurrentUserProfile, upsertProfile } from '../../services/profiles'
-import { supabase } from '../../services/supabase'
+import { resetCareerAnalysesForUser } from '../../services/careerAnalyses'
 
 export default function ProfilePage() {
   const { user, isConfigured } = useAuth()
@@ -69,18 +69,11 @@ export default function ProfilePage() {
     try {
       setResetMessage('Resetting data...')
       
-      if (user && isConfigured) {
-        // Delete career analyses from Supabase
-        const { error } = await supabase
-          .from('career_analyses')
-          .delete()
-          .eq('user_id', user.id)
-        
-        if (error) throw error
+      if (user) {
+        await resetCareerAnalysesForUser(user.id)
       }
       
       // Clear LocalStorage fallbacks
-      localStorage.removeItem('local_analyses')
       localStorage.removeItem('active_roadmap_status')
       
       setResetMessage('All progress and analyses have been cleared.')

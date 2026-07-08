@@ -2,6 +2,12 @@ import type { Session, User } from '@supabase/supabase-js'
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { isSupabaseConfigured, supabase } from '../services/supabase'
 
+type LocalUserRecord = {
+  email: string
+  password: string
+  user: User
+}
+
 type AuthContextValue = {
   user: User | null
   session: Session | null
@@ -18,20 +24,88 @@ type AuthProviderProps = {
   children: React.ReactNode
 }
 
+function readLocalUsers() {
+  try {
+    return JSON.parse(localStorage.getItem('local_users') || '[]') as LocalUserRecord[]
+  } catch {
+    return []
+  }
+}
+
+function writeLocalUsers(users: LocalUserRecord[]) {
+  localStorage.setItem('local_users', JSON.stringify(users))
+}
+
+function readLocalSession() {
+  try {
+    const savedSession = localStorage.getItem('local_session')
+    return savedSession ? JSON.parse(savedSession) as Session : null
+  } catch (err) {
+    console.error('Error parsing local session:', err)
+    return null
+  }
+}
+
+function createLocalUser(email: string) {
+  return {
+    id: crypto.randomUUID(),
+    email,
+    app_metadata: {},
+    user_metadata: {},
+    aud: 'authenticated',
+    created_at: new Date().toISOString(),
+  } as User
+}
+
+function createLocalSession(user: User) {
+  return {
+    access_token: 'local-token',
+    token_type: 'bearer',
+    expires_in: 3600,
+    refresh_token: 'local-refresh',
+    user,
+  } as Session
+}
+
+function shouldUseLocalFallback(error: any) {
+  if (!isSupabaseConfigured) {
+    return true
+  }
+
+  const rawMessage = error?.message || (error instanceof Error ? error.message : String(error))
+  const message = String(rawMessage).toLowerCase()
+
+  return [
+    'failed to fetch',
+    'fetch failed',
+    'networkerror',
+    'network request failed',
+    'invalid path specified in request url',
+    'invalid path',
+  ].some((pattern) => message.includes(pattern))
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
+      setSession(readLocalSession())
       setIsLoading(false)
       return
     }
 
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setIsLoading(false)
-    })
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data.session ?? readLocalSession())
+      })
+      .catch((error) => {
+        console.warn('Falling back to local session after Supabase session failure:', error)
+        setSession(readLocalSession())
+      })
+      .finally(() => setIsLoading(false))
 
     const {
       data: { subscription },
@@ -50,27 +124,92 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isConfigured: isSupabaseConfigured,
       async signIn(email, password) {
         if (!isSupabaseConfigured) {
-          throw new Error('Supabase is not configured yet. Add your keys to .env first.')
+          const localUsers = readLocalUsers()
+          const found = localUsers.find((userRecord) => userRecord.email === email)
+          if (!found) {
+            throw new Error('Invalid login credentials.')
+          }
+          if (found.password !== password) {
+            throw new Error('Invalid login credentials.')
+          }
+          const mockSession = createLocalSession(found.user)
+
+          localStorage.setItem('local_session', JSON.stringify(mockSession))
+          setSession(mockSession)
+          return
         }
 
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        try {
+          const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-        if (error) {
-          throw error
+          if (error) {
+            throw error
+          }
+        } catch (error) {
+          if (!shouldUseLocalFallback(error)) {
+            throw error
+          }
+
+          const localUsers = readLocalUsers()
+          let found = localUsers.find((userRecord) => userRecord.email === email)
+
+          if (!found) {
+            found = { email, password, user: createLocalUser(email) }
+            localUsers.push(found)
+            writeLocalUsers(localUsers)
+          } else if (found.password !== password) {
+            throw new Error('Invalid login credentials.')
+          }
+
+          const localSession = createLocalSession(found.user)
+          localStorage.setItem('local_session', JSON.stringify(localSession))
+          setSession(localSession)
         }
       },
       async signUp(email, password) {
         if (!isSupabaseConfigured) {
-          throw new Error('Supabase is not configured yet. Add your keys to .env first.')
+          const localUsers = readLocalUsers()
+          if (localUsers.some((userRecord) => userRecord.email === email)) {
+            throw new Error('User with this email already exists.')
+          }
+          const mockUser = createLocalUser(email)
+          const mockSession = createLocalSession(mockUser)
+
+          localUsers.push({ email, password, user: mockUser })
+          writeLocalUsers(localUsers)
+          localStorage.setItem('local_session', JSON.stringify(mockSession))
+          setSession(mockSession)
+          return
         }
 
-        const { error } = await supabase.auth.signUp({ email, password })
+        try {
+          const { error } = await supabase.auth.signUp({ email, password })
 
-        if (error) {
-          throw error
+          if (error) {
+            throw error
+          }
+        } catch (error) {
+          if (!shouldUseLocalFallback(error)) {
+            throw error
+          }
+
+          const localUsers = readLocalUsers()
+          if (localUsers.some((userRecord) => userRecord.email === email)) {
+            throw new Error('User with this email already exists.')
+          }
+
+          const localUser = createLocalUser(email)
+          const localSession = createLocalSession(localUser)
+
+          localUsers.push({ email, password, user: localUser })
+          writeLocalUsers(localUsers)
+          localStorage.setItem('local_session', JSON.stringify(localSession))
+          setSession(localSession)
         }
       },
       async signOut() {
+        localStorage.removeItem('local_session')
+
         if (!isSupabaseConfigured) {
           setSession(null)
           return

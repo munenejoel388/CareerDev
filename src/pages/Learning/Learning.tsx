@@ -49,7 +49,7 @@ function BrandIcon({ provider }: { provider: string }) {
 }
 
 export default function LearningRoadmap() {
-  const { user, isConfigured } = useAuth()
+  const { user } = useAuth()
   const [analysis, setAnalysis] = useState<CareerAnalysis | null>(null)
   const [courses, setCourses] = useState<ExtendedRecommendation[]>([])
   
@@ -61,32 +61,19 @@ export default function LearningRoadmap() {
     if (!user) return
     setIsLoading(true)
 
-    if (isConfigured) {
-      listCareerAnalyses(user.id)
-        .then((data) => {
-          if (data && data.length > 0) {
-            setAnalysis(data[0])
-            processRecommendations(data[0].learning_recommendations)
-          } else {
-            setAnalysis(null)
-            setCourses([])
-          }
-        })
-        .catch((err) => console.error('Error fetching roadmap:', err))
-        .finally(() => setIsLoading(false))
-    } else {
-      // Local storage fallback
-      const local = localStorage.getItem('local_analyses')
-      if (local) {
-        const parsed = JSON.parse(local)
-        if (parsed.length > 0) {
-          setAnalysis(parsed[0])
-          processRecommendations(parsed[0].learning_recommendations)
+    listCareerAnalyses(user.id)
+      .then((data) => {
+        if (data.length > 0) {
+          setAnalysis(data[0])
+          processRecommendations(data[0].learning_recommendations)
+        } else {
+          setAnalysis(null)
+          setCourses([])
         }
-      }
-      setIsLoading(false)
-    }
-  }, [user, isConfigured])
+      })
+      .catch((err) => console.error('Error fetching roadmap:', err))
+      .finally(() => setIsLoading(false))
+  }, [user])
 
   useEffect(() => {
     loadRoadmap()
@@ -124,23 +111,9 @@ export default function LearningRoadmap() {
     })
 
     try {
-      if (isConfigured) {
-        const updatedAnalysis = await updateAnalysisRecommendations(analysis.id, updatedCourses)
-        setAnalysis(updatedAnalysis)
-        processRecommendations(updatedAnalysis.learning_recommendations)
-      } else {
-        // Local Fallback
-        const local = localStorage.getItem('local_analyses')
-        if (local) {
-          const parsed: CareerAnalysis[] = JSON.parse(local)
-          if (parsed.length > 0) {
-            parsed[0].learning_recommendations = updatedCourses
-            localStorage.setItem('local_analyses', JSON.stringify(parsed))
-            setAnalysis(parsed[0])
-            processRecommendations(parsed[0].learning_recommendations)
-          }
-        }
-      }
+      const updatedAnalysis = await updateAnalysisRecommendations(analysis.id, updatedCourses)
+      setAnalysis(updatedAnalysis)
+      processRecommendations(updatedAnalysis.learning_recommendations)
       
       // Dispatch events to refresh other widgets
       window.dispatchEvent(new Event('roadmap-updated'))
@@ -169,18 +142,7 @@ export default function LearningRoadmap() {
         }
         return c
       })
-      if (isConfigured) {
-        await updateAnalysisRecommendations(analysis.id, updatedCourses)
-      } else {
-        const local = localStorage.getItem('local_analyses')
-        if (local) {
-          const parsed: CareerAnalysis[] = JSON.parse(local)
-          if (parsed.length > 0) {
-            parsed[0].learning_recommendations = updatedCourses
-            localStorage.setItem('local_analyses', JSON.stringify(parsed))
-          }
-        }
-      }
+      await updateAnalysisRecommendations(analysis.id, updatedCourses)
       window.dispatchEvent(new Event('roadmap-updated'))
     }
   }

@@ -16,7 +16,7 @@ import { getCurrentUserProfile } from '../../services/profiles'
 import type { CareerAnalysis, Profile } from '../../types/database'
 
 export default function Dashboard() {
-  const { user, isConfigured } = useAuth()
+  const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [analyses, setAnalyses] = useState<CareerAnalysis[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -25,32 +25,17 @@ export default function Dashboard() {
     if (!user) return
     setIsLoading(true)
 
-    // Load Profile
-    if (isConfigured) {
-      getCurrentUserProfile(user.id)
-        .then(data => { if (data) setProfile(data) })
-        .catch(err => console.error(err))
-    } else {
-      const savedProfile = localStorage.getItem('user_profile')
-      if (savedProfile) setProfile(JSON.parse(savedProfile))
-    }
-
-    // Load Analyses
-    if (isConfigured) {
-      listCareerAnalyses(user.id)
-        .then(data => {
-          if (data) setAnalyses(data)
-        })
-        .catch(err => console.error(err))
-        .finally(() => setIsLoading(false))
-    } else {
-      const local = localStorage.getItem('local_analyses')
-      if (local) {
-        setAnalyses(JSON.parse(local))
-      }
-      setIsLoading(false)
-    }
-  }, [user, isConfigured])
+    Promise.all([
+      getCurrentUserProfile(user.id),
+      listCareerAnalyses(user.id),
+    ])
+      .then(([profileData, analysesData]) => {
+        if (profileData) setProfile(profileData)
+        setAnalyses(analysesData)
+      })
+      .catch(err => console.error(err))
+      .finally(() => setIsLoading(false))
+  }, [user])
 
   useEffect(() => {
     loadDashboardData()

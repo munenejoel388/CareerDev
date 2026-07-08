@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { createCareerAnalysis } from '../../services/careerAnalyses'
-import { upsertProfile } from '../../services/profiles'
+import { getCurrentUserProfile, upsertProfile } from '../../services/profiles'
 import type { SkillGap, LearningRecommendation, NewCareerAnalysis } from '../../types/database'
 
 const STEPS = [
@@ -28,7 +28,7 @@ const POPULAR_SKILLS = [
 ]
 
 export default function CareerAnalysis() {
-  const { user, isConfigured } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(1)
   
@@ -54,25 +54,23 @@ export default function CareerAnalysis() {
 
   // Load profile values if they exist
   useEffect(() => {
-    if (user && isConfigured) {
-      // Just prefill target career if known
-      const savedProfile = localStorage.getItem('user_profile')
-      if (savedProfile) {
-        try {
-          const parsed = JSON.parse(savedProfile)
-          if (parsed.target_career) setTargetCareer(parsed.target_career)
-          if (parsed.experience_level) {
+    if (user) {
+      getCurrentUserProfile(user.id)
+        .then((profile) => {
+          if (!profile) return
+          if (profile.target_career) setTargetCareer(profile.target_career)
+          if (profile.experience_level) {
             const mapExp: Record<string, string> = {
               'Junior': '0-2 years',
               'Mid': '2-5 years',
-              'Senior': '5+ years'
+              'Senior': '5+ years',
             }
-            setYearsExperience(mapExp[parsed.experience_level] || '0-1 years')
+            setYearsExperience(mapExp[profile.experience_level] || '0-1 years')
           }
-        } catch {}
-      }
+        })
+        .catch((error) => console.error('Error loading profile for analysis:', error))
     }
-  }, [user, isConfigured])
+  }, [user])
 
   function handleAddSkill(skill: string) {
     const cleaned = skill.trim()
@@ -232,33 +230,18 @@ export default function CareerAnalysis() {
         learning_recommendations: analysisData.learning_recommendations,
       }
 
-      // 2. Save Analysis
-      if (isConfigured) {
-        // Upsert user profiles table target career & experience
-        const mapExp: Record<string, string> = {
-          '0-1 years': 'Junior',
-          '2-5 years': 'Mid',
-          '5+ years': 'Senior'
-        }
-        await upsertProfile({
-          id: user.id,
-          target_career: targetCareer,
-          experience_level: mapExp[yearsExperience] || 'Junior'
-        })
-        
-        await createCareerAnalysis(payload)
-      } else {
-        // Local fallback
-        const existing = localStorage.getItem('local_analyses')
-        const list = existing ? JSON.parse(existing) : []
-        const localObj = {
-          ...payload,
-          id: crypto.randomUUID(),
-          created_at: new Date().toISOString()
-        }
-        list.unshift(localObj)
-        localStorage.setItem('local_analyses', JSON.stringify(list))
+      const mapExp: Record<string, string> = {
+        '0-1 years': 'Junior',
+        '2-5 years': 'Mid',
+        '5+ years': 'Senior',
       }
+      await upsertProfile({
+        id: user.id,
+        target_career: targetCareer,
+        experience_level: mapExp[yearsExperience] || 'Junior',
+      })
+
+      await createCareerAnalysis(payload)
 
       // Dispatch window events so dashboard instantly updates
       window.dispatchEvent(new Event('profile-updated'))

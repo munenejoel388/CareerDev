@@ -1,11 +1,12 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { BriefcaseBusiness, UserPlus } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 function Register() {
   const { isConfigured, signUp } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
@@ -20,7 +21,11 @@ function Register() {
 
     try {
       await signUp(email, password)
-      setMessage('Account created! Please check your email for confirmation if enabled in Supabase, or proceed to sign in.')
+      if (isConfigured) {
+        setMessage('Account created! Please check your email for confirmation if enabled in Supabase, or proceed to sign in.')
+      } else {
+        navigate('/dashboard', { replace: true })
+      }
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : 'Unable to create account.')
     } finally {
@@ -52,8 +57,8 @@ function Register() {
         </div>
 
         {!isConfigured ? (
-          <div className="mb-6 rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-xs text-amber-400">
-            Supabase is not configured yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env locally and to GitHub repository secrets for production.
+          <div className="mb-6 rounded-xl border border-cyan-500/25 bg-cyan-500/5 px-4 py-3 text-xs text-cyan-300">
+            Running in Local Preview Mode. All data will be saved to this browser's LocalStorage.
           </div>
         ) : null}
 
@@ -103,7 +108,7 @@ function Register() {
 
           <button
             type="submit"
-            disabled={isSubmitting || !isConfigured}
+            disabled={isSubmitting}
             className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-cyan-500 py-3.5 font-bold text-slate-950 hover:bg-cyan-400 transition-all duration-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] transform hover:scale-[1.01]"
           >
             {isSubmitting ? 'Creating account...' : 'Create Account'}

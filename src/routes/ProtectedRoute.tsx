@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 function ProtectedRoute() {
-  const { isConfigured, isLoading, user } = useAuth()
+  const { isLoading, user } = useAuth()
   const location = useLocation()
 
   if (isLoading) {
@@ -11,10 +11,6 @@ function ProtectedRoute() {
         <p className="text-sm font-medium text-slate-600">Loading account...</p>
       </div>
     )
-  }
-
-  if (!isConfigured) {
-    return <Outlet />
   }
 
   if (!user) {
