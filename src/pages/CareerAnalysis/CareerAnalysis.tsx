@@ -27,6 +27,15 @@ const POPULAR_SKILLS = [
   'System Design', 'Docker', 'Kubernetes', 'AWS', 'Linux', 'Git'
 ]
 
+const COURSE_LINKS = {
+  awsCloudPractitioner: 'https://explore.skillbuilder.aws/learn/course/external/view/elearning/134/aws-cloud-practitioner-essentials',
+  googleDataStructures: 'https://techdevguide.withgoogle.com/paths/data-structures-and-algorithms/',
+  ibmPython: 'https://skillsbuild.org/students/course-catalog/python-for-data-science',
+  microsoftAi: 'https://learn.microsoft.com/en-us/training/paths/get-started-with-artificial-intelligence-on-azure/',
+  redHatLinux: 'https://www.redhat.com/en/services/training/rh104-red-hat-enterprise-linux-technical-overview',
+  stanfordMachineLearning: 'https://www.coursera.org/specializations/machine-learning-introduction',
+}
+
 export default function CareerAnalysis() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -130,10 +139,10 @@ export default function CareerAnalysis() {
 
       // Recommendations matching the screenshot
       recommendations = [
-        { title: 'Python Programming', provider: 'IBM SkillsBuild', url: 'https://skillsbuild.org', skill: 'Python' },
-        { title: 'Data Structures', provider: 'Google for Developers', url: 'https://developers.google.com', skill: 'Data Structures' },
-        { title: 'AI Fundamentals', provider: 'Microsoft Learn', url: 'https://learn.microsoft.com', skill: 'Artificial Intelligence' },
-        { title: 'Machine Learning Basics', provider: 'Stanford / Coursera', url: 'https://coursera.org', skill: 'Machine Learning' }
+        { title: 'Python for Data Science', provider: 'IBM SkillsBuild', url: COURSE_LINKS.ibmPython, skill: 'Python' },
+        { title: 'Data Structures and Algorithms', provider: 'Google for Developers', url: COURSE_LINKS.googleDataStructures, skill: 'Data Structures' },
+        { title: 'Get Started with AI on Azure', provider: 'Microsoft Learn', url: COURSE_LINKS.microsoftAi, skill: 'Artificial Intelligence' },
+        { title: 'Machine Learning Specialization', provider: 'Stanford / Coursera', url: COURSE_LINKS.stanfordMachineLearning, skill: 'Machine Learning' }
       ]
     } else if (target.includes('front') || target.includes('web') || target.includes('react') || target.includes('developer')) {
       expected = ['JavaScript', 'TypeScript', 'React', 'HTML/CSS', 'System Design', 'Git']
@@ -159,9 +168,9 @@ export default function CareerAnalysis() {
       })
 
       recommendations = [
-        { title: 'Python Programming', provider: 'IBM SkillsBuild', url: 'https://skillsbuild.org', skill: 'Python' }, // Mock screenshot alignment
-        { title: 'Cloud Fundamentals', provider: 'AWS Skill Builder', url: 'https://aws.amazon.com', skill: 'Cloud' },
-        { title: 'Data Structures', provider: 'Google for Developers', url: 'https://developers.google.com', skill: 'Data Structures' }
+        { title: 'Python for Data Science', provider: 'IBM SkillsBuild', url: COURSE_LINKS.ibmPython, skill: 'Python' },
+        { title: 'AWS Cloud Practitioner Essentials', provider: 'AWS Skill Builder', url: COURSE_LINKS.awsCloudPractitioner, skill: 'Cloud' },
+        { title: 'Data Structures and Algorithms', provider: 'Google for Developers', url: COURSE_LINKS.googleDataStructures, skill: 'Data Structures' }
       ]
     } else {
       // Default / Cloud / General
@@ -184,9 +193,9 @@ export default function CareerAnalysis() {
       })
 
       recommendations = [
-        { title: 'Linux Administration', provider: 'Red Hat Academy', url: 'https://redhat.com', skill: 'Linux' },
-        { title: 'Cloud Fundamentals', provider: 'AWS Skill Builder', url: 'https://aws.amazon.com', skill: 'Cloud Computing' },
-        { title: 'AI Fundamentals', provider: 'Microsoft Learn', url: 'https://learn.microsoft.com', skill: 'AI' }
+        { title: 'Red Hat Enterprise Linux Technical Overview', provider: 'Red Hat Academy', url: COURSE_LINKS.redHatLinux, skill: 'Linux' },
+        { title: 'AWS Cloud Practitioner Essentials', provider: 'AWS Skill Builder', url: COURSE_LINKS.awsCloudPractitioner, skill: 'Cloud Computing' },
+        { title: 'Get Started with AI on Azure', provider: 'Microsoft Learn', url: COURSE_LINKS.microsoftAi, skill: 'AI' }
       ]
     }
 

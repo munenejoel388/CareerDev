@@ -126,24 +126,32 @@ export default function LearningRoadmap() {
     }
   }
 
+  async function handleCourseVisit(course: ExtendedRecommendation) {
+    if (course.status === 'Not Started') {
+      await handleStatusChange(course.title, 'In Progress', 10)
+    }
+  }
+
   async function handleProgressSlider(title: string, val: number) {
     let status: 'Not Started' | 'In Progress' | 'Completed' = 'In Progress'
     if (val === 100) status = 'Completed'
     if (val === 0) status = 'Not Started'
     
+    const updatedCourses = courses.map(c => {
+      if (c.title === title) {
+        return { ...c, status, progress: val }
+      }
+      return c
+    })
+
     // Update local state first for smooth slider responsiveness
-    setCourses(prev => prev.map(c => c.title === title ? { ...c, status, progress: val } : c))
+    setCourses(updatedCourses)
     
-    // Debounce database sync slightly or just write immediately
     if (analysis) {
-      const updatedCourses = courses.map(c => {
-        if (c.title === title) {
-          return { ...c, status, progress: val }
-        }
-        return c
-      })
-      await updateAnalysisRecommendations(analysis.id, updatedCourses)
+      const updatedAnalysis = await updateAnalysisRecommendations(analysis.id, updatedCourses)
+      setAnalysis(updatedAnalysis)
       window.dispatchEvent(new Event('roadmap-updated'))
+      window.dispatchEvent(new Event('analyses-updated'))
     }
   }
 
@@ -260,9 +268,10 @@ export default function LearningRoadmap() {
                         href={course.url} 
                         target="_blank" 
                         rel="noreferrer"
+                        onClick={() => handleCourseVisit(course)}
                         className="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-400/80 hover:text-cyan-300 mt-2 transition"
                       >
-                        Visit Course Material
+                        Open Learning Resource
                         <ExternalLink size={10} />
                       </a>
                     </div>
